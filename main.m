@@ -15,43 +15,32 @@ hexapod.cycle_time = time_step;
 camera_name = {'webcam', 'chameleon'};
 detector = FaceDetector(camera_name{1});
 
-% capture one frame to get size
-[pos, frame] = detector.capture();
-
-frame_size = size(frame);
-pos_target = frame_size(1:2)/2;
-
-%% Initialise the Video Player
-% Create the video player object.
-video_player = vision.VideoPlayer(...
-    'Position', [100 100 [frame_size(2), frame_size(1)]+30]);
 
 %% Initialise the controller
 controller = HexapodController(time_step);
-
-% set control target
-controller.target = pos_target;
 
 %% Initialise the timer
 % the timer exeucation function will be a full step of detecting face 
 % location, getting controller outputs, sending outputs to hexapods
 t = timer;
+
 t.StartFcn = @(~,thisEvent)disp([thisEvent.Type ' executed '...
     datestr(thisEvent.Data.time,'dd-mmm-yyyy HH:MM:SS.FFF')]);
 
-t.TimerFcn = @(h, event) timer_func(h, event, detector, controller, hexapod, video_player);
 
-t.StopFcn = @(h, event) stop_func(h, event, detector, controller, hexapod, video_player);
+t.StopFcn = @(h, event) stop_func(h, event, detector, controller, hexapod);
 
 t.Period = hexapod.cycle_time;
 
-t.TasksToExecute = 200;
+t.TasksToExecute = ceil(30/time_step);
 t.ExecutionMode = 'fixedRate';
 
-
-
 %% 
-create_gui(t)
+ha = create_gui(t, detector, controller);
+
+t.TimerFcn = @(h, event) timer_func(h, event, detector, controller, hexapod, ha);
+
+
 
 end
 
@@ -59,7 +48,7 @@ end
 
 % The most important function, one that is executed at ever step in the
 % timer
-function timer_func(h_timer, event, detector, controller, hex, video_player)
+function timer_func(h_timer, event, detector, controller, hex, ha)
 % 1) Get location of the face
 [pos_image, frame] = detector.capture();
 
@@ -74,6 +63,7 @@ function timer_func(h_timer, event, detector, controller, hex, video_player)
 % was first detected or fixed to the centre of the frame.
 
 pos_hex_target = controller.step(pos_image);
+fprintf('error: intx=%.1f, x=%.1f, intz=%.1f, z=%.1f \n', controller.e_states(:));
 
 % convert to 3d from [x, z] to [x, y, z];
 pos_hex_target = [pos_hex_target(1), 0, pos_hex_target(2)];
@@ -83,45 +73,62 @@ pos_hex_target = [pos_hex_target(1), 0, pos_hex_target(2)];
 hex.move(pos_hex_target)
 
 % 4) display video
-step(video_player, frame);
-
+% Insert controller target
+frame = insertMarker(frame, controller.target, 'o', 'Color', 'r', 'size', 8);
+show_frame_on_axis(ha, frame);
 end
 
 % Stop fun, clean up
-function stop_func(h_timer, event, detector, controller, hex, video_player)
+function stop_func(h_timer, event, detector, controller, hex)
 delete(detector);
 delete(controller);
 delete(hex);
-release(video_player);
 
 disp([event.Type ' executed '...
     datestr(event.Data.time,'dd-mmm-yyyy HH:MM:SS.FFF')]);
 end
 
 %% GUI functions
-function create_gui(timer_object)
+function ha = create_gui(timer_object, detector, controller)
 hf = figure(104);
+ha = axes(hf);
 
-insertButtons(hf, timer_object)
+insertButtons(hf, ha, timer_object, detector, controller)
 end
 
-function insertButtons(hf, timer_object)
+function insertButtons(hf, ha, timer_object, detector, controller)
+
+% Initialise button 
+uicontrol(hf,'unit','pixel','style','pushbutton','string','Initialise',...
+    'position',[10 10 75 25], 'tag','PBButton123','callback',...
+    {@init_callback, detector, controller, ha});
 
 % Play button with text Start/Pause/Continue
 uicontrol(hf,'unit','pixel','style','pushbutton','string','Start',...
-    'position',[10 10 75 25], 'tag','PBButton123','callback',...
+    'position',[100 10 50 25], 'tag','PBButton123','callback',...
     {@start_callback, timer_object});
 
 % Exit button with text Exit
 uicontrol(hf,'unit','pixel','style','pushbutton','string','Exit',...
-    'position',[100 10 50 25],'callback', ...
-    {@stop_callback, timer_object});
+    'position',[210 10 50 25],'callback', ...
+    {@stop_callback, timer_object, hf});
+end
+
+function init_callback(~, ~, detector, controller, ha)
+% capture one frame to get the target location at the start
+[pos, frame] = detector.capture();
+frame = insertMarker(frame, pos, 'o', 'Color', 'r', 'size', 8);
+% set control target
+controller.target = pos;
+
+showFrameOnAxis(ha, frame)
 end
 
 function start_callback(~, ~, timer_object)
 start(timer_object);
 end
 
-function stop_callback(~, ~, timer_object)
+function stop_callback(h, event, timer_object, hf)
 stop(timer_object);
+close(hf);
 end

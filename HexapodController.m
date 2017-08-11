@@ -6,7 +6,7 @@ classdef HexapodController < handle
         % Need to define the inputs and outputs of the controller
         
         % Controller properties
-        gain = [0.001, 0.2, 0]; % [i, p, d]
+        gain = [2, 0.3, 0.05]; % [i, p, d]
         time_step           % [s]
         
         N_dim = 2;          % target dimension
