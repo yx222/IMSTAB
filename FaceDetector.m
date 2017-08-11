@@ -9,6 +9,7 @@ classdef FaceDetector < handle
                                          'input', {'F7_Mono12_512x384_Mode5'})...
                               );
         camera_name = 'webcam';
+        N_test_frame = 400
         
         % other objects
         vid
@@ -27,7 +28,14 @@ classdef FaceDetector < handle
     
     methods
         % Constructor
-        function obj = FaceDetector()
+        function obj = FaceDetector(camera_name)
+            if nargin == 0
+                b_test = true;
+            else
+                b_test = false;
+                obj.camera_name = camera_name;
+            end
+            
             % reset devices
             imaqreset()
             
@@ -45,6 +53,11 @@ classdef FaceDetector < handle
             
             % Capture one frame to get its size.
             obj.frame_size = size(obj.get_im_gray());
+            
+            % Run test mode
+            if b_test
+                obj.run_test();
+            end
             
         end
         
@@ -131,6 +144,13 @@ classdef FaceDetector < handle
                 end
             end
             
+            % Make sure the format of frame doesn't change betwen grayscale
+            % and rgb
+            if length(size(frame))==2
+                % convert to rgb
+                frame = gray2rgb(frame);
+            end
+            
             if ~isempty(obj.bbox_points)
                 pos = mean(obj.bbox_points);
             else
@@ -161,7 +181,7 @@ classdef FaceDetector < handle
         end
         
         %% Methods for testing
-        function test(obj)
+        function run_test(obj)
             % Create the video player object.
             videoPlayer = vision.VideoPlayer(...
                 'Position', [100 100 [obj.frame_size(2), obj.frame_size(1)]+30]);
@@ -174,7 +194,7 @@ classdef FaceDetector < handle
             runLoop = true;
             obj.num_pts = 0;
             frame_count = 0;
-            N_frame = 100;
+            N_frame = obj.N_test_frame;
             
             trajectory = zeros(N_frame, 2);
             
@@ -182,8 +202,7 @@ classdef FaceDetector < handle
                 tic();
                 frame_count = frame_count + 1;
                 [pos, frame] = obj.capture();
-                
-                
+                                
                 % Display a centre point for tracking
                 frame = insertMarker(frame, pos, 'x', 'Color', 'r', ...
                     'size', 8);
@@ -199,13 +218,17 @@ classdef FaceDetector < handle
                 runLoop = isOpen(videoPlayer);
                 
                 toc()
-                
-                % release resource
-                release(videoPlayer);
-            end
+            end % while
             
+            % release resource
+            release(videoPlayer);
         end
     end
     
 end
 
+
+%% Helper functions
+function rgb = gray2rgb(gray)
+rgb = cat(3, gray, gray, gray);
+end

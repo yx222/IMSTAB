@@ -24,7 +24,7 @@ classdef HexapodInterface < handle
         port
         
         % Motion properties
-        cycle_time = 100; % [ms]
+        cycle_time = 0.1; % [s]
         
         % Other properties?
 
@@ -34,11 +34,23 @@ classdef HexapodInterface < handle
         % Constructor
         function obj = HexapodInterface(port_name)
                 % test mode
-                if nargin == 0 || isempty(port_name)
-                    obj.connect_port();
-                else
-                    obj.connect_port(port_name);
-                end       
+                if nargin == 0 
+                    port_name = [];
+                    b_test = true;
+                else 
+                    b_test = false;
+                end
+ 
+                % Connec tto given port
+                obj.connect_port(port_name);
+                
+                % Initialise
+                obj.initialise();
+                
+                % Run test if called with an empty port_name
+                if b_test
+                    obj.run_test();
+                end
         end
         
         % Destructor
@@ -53,7 +65,7 @@ classdef HexapodInterface < handle
         % Set up serial communication
         function connect_port(obj, port_name)
             % Open Port
-            if nargin > 1
+            if ~isempty(port_name)
                 % a real port is defined
                 s= serial(port_name); % eg: COM4
                 set(s,'BaudRate',57600);
@@ -67,11 +79,7 @@ classdef HexapodInterface < handle
             end
             
             % assign to object property
-            obj.port = s;
-            
-            % Initialise
-            obj.initialise();
-            
+            obj.port = s;            
         end
         
         % Initialise hexapod
@@ -82,7 +90,7 @@ classdef HexapodInterface < handle
             pause(2);
             
             % Set move timing
-            send_command(obj.port, 'SCT T%i\n', obj.cycle_time);
+            send_command(obj.port, 'SCT T%i\n', obj.cycle_time*1000);
         end
         
         % Move the hexapod to a specified absolute location
@@ -108,9 +116,26 @@ classdef HexapodInterface < handle
                 new_val(ii) = min(obj.limits.(names{ii})(2), ...
                     max(obj.limits.(names{ii})(1), val(ii))...
                     );
+            end       
+        end %  new_val = saturate(obj, val)
+        
+        %% Test methods
+        function run_test(obj)
+            N_test = 100;
+            time_step = 0.1;
+            period = 2;
+            time = (1:N_test)*time_step;
+            
+            x = 10*sin(2*pi*time/period)';
+            z = 5*cos(2*pi*time/period + pi/6)';
+
+            xyz = [x, x*0, z];
+            
+            for ii = 1:N_test
+                obj.move(xyz(ii, :))
+                pause(0.1);
             end
             
-
         end
         
     end
@@ -129,9 +154,9 @@ fprintf(port, s);
 
 % #TODO# use a nicer logger instead of printing to the command line.
 
-% if isvalid(port)
-%     fprintf(s);
-% end
+if ~isa(port, 'double') && isvalid(port)
+    fprintf(s);
+end
 
 end
 
