@@ -6,8 +6,11 @@ classdef HexapodController < handle
         % Need to define the inputs and outputs of the controller
         
         % Controller properties
-        gain = [2, 0.3, 0.05]; % [i, p, d]
+        gain = [2, 0.3, 0.03]*1.5; % [i, p, d]
         time_step           % [s]
+        
+        % bound on the integrator terms
+        int_bound = [40, 20];
         
         N_dim = 2;          % target dimension
         
@@ -55,6 +58,10 @@ classdef HexapodController < handle
             % updates the states
             obj.e_states = [obj.e_states(1,:) + e*obj.time_step; ...
                             e];
+                        
+            % saturate the integral contributions
+            obj.e_states(1,:) = min(obj.e_states(1,:), obj.int_bound/obj.gain(1));
+            obj.e_states(1,:) = max(obj.e_states(1,:), -obj.int_bound/obj.gain(1));
             
             % Compute control signal            
             ipd = [obj.e_states; e_der]; % 3*N_dim
