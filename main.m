@@ -6,14 +6,22 @@ function main()
 % Some constants
 time_step = 0.05; % [s]
 
+% Hexapod or offline test?
+b_offline = false;
+if b_offline
+    port_name = [];
+    camera_name = 'webcam';
+else
+    port_name = 'COM5';
+    camera_name = 'chameleon';
+end
+
 %% Initialise the hexapod object
-port_name = []; %'COM5'; % COM5
 hexapod = HexapodInterface(port_name);
 hexapod.cycle_time = time_step;
 
-%% Initialise the face dector
-camera_name = {'webcam', 'chameleon'};
-detector = FaceDetector(camera_name{1});
+%% Initialise the face de\qctor
+detector = FaceDetector(camera_name);
 
 
 %% Initialise the controller
