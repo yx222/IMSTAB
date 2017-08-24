@@ -5,6 +5,7 @@ function main()
 %% Initialisation of all involved parts
 % Some constants
 time_step = 0.05; % [s]
+mode = 'hybrid';
 
 % Hexapod or offline test?
 b_offline = false;
@@ -25,7 +26,7 @@ detector = FaceDetector(camera_name);
 
 
 %% Initialise the controller
-controller = HexapodController(time_step);
+controller = HexapodController(time_step, mode);
 
 %% Initialise the timer
 % the timer exeucation function will be a full step of detecting face 
@@ -73,9 +74,11 @@ function timer_func(h_timer, event, detector, controller, hex, ha)
 pos_hex_target = controller.step(pos_image);
 fprintf('error: intx=%.1f, x=%.1f, intz=%.1f, z=%.1f \n', controller.e_states(:));
 
-% convert to 3d from [x, z] to [x, y, z];
-pos_hex_target = [pos_hex_target(1), 0, pos_hex_target(2)];
+% convert to 6d from [x, z] to [x, y, z, u, v, w];
+% pos_hex_target = [pos_hex_target(1), 0, pos_hex_target(2), 0, 0, 0];
 
+% convert to 6d from [u, v] to [x, y, z, u, v, w];
+% pos_hex_target = [0, 0, 0, pos_hex_target(2), 0, pos_hex_target(1)];
 
 % 3) Send control signal to the hexapod
 hex.move(pos_hex_target)
