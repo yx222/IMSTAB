@@ -99,11 +99,11 @@ classdef HexapodController < handle
             
             int_ex_max = min(obj.u_bound./sum(obj.fb_matrix(:,1)+eps));
             int_ex_min = max(-obj.u_bound./sum(obj.fb_matrix(:,1)+eps));
-            int_ey_max = min(obj.u_bound./sum(obj.fb_matrix(:,4)+eps));
-            int_ey_min = max(-obj.u_bound./sum(obj.fb_matrix(:,4)+eps));
+            int_ez_max = min(obj.u_bound./sum(obj.fb_matrix(:,4)+eps));
+            int_ez_min = max(-obj.u_bound./sum(obj.fb_matrix(:,4)+eps));
             
-            int_e_max = [int_ex_max, int_ey_max];
-            int_e_min = [int_ex_min, int_ey_min];
+            int_e_max = [int_ex_max, int_ez_max];
+            int_e_min = [int_ex_min, int_ez_min];
             
             obj.e_states(1,:) = min(obj.e_states(1,:), int_e_max);
             obj.e_states(1,:) = max(obj.e_states(1,:), int_e_min);
@@ -112,7 +112,7 @@ classdef HexapodController < handle
             ipd = [obj.e_states; e_der]; % 3*N_dim
             
             % convert ipd to vector
-            ipd = ipd(:); %[int_ex; ex; der_ex; int_ey; ey; der_ey]
+            ipd = ipd(:); %[int_ex; ex; der_ex; int_ez; ez; der_ez]
             
             u = obj.fb_matrix*ipd; % 1*N_dim      
             
