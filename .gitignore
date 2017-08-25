@@ -1,5 +1,6 @@
 
-*.asv
 matlab_workspace.mat
-data/example_trajectory.mat
+*.asv
 live_tracking_test.m
+data/example_trajectory.mat
+

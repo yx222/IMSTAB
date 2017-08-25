@@ -7,18 +7,10 @@ classdef HexapodInterface < handle
         % M-840
         limits = struct('x', [-50, 50]*0.9, ... % mm
                         'y', [-50, 50]*0.9, ...
-                        'z', [-25, 25]*0.8, ...
-                        'theta_x', [-15, 15], ... % deg
-                        'theta_y', [-15, 15], ...
-                        'theta_z', [-30, 30]);
-                    
-        % M-824
-%         limits = struct('x', [-22.5, 22.5], ... % mm
-%                         'y', [-22.5, 22.5], ...
-%                         'z', [-12.5, 12.5], ...
-%                         'theta_x', [-7.5, 7.5], ... % deg
-%                         'theta_y', [-7.5, 7.5], ...
-%                         'theta_z', [-12.5, 12.5]);
+                        'z', [-25, 25]*0.9, ...
+                        'u', [-16, 16], ... % deg
+                        'v', [-16, 16], ...
+                        'w', [-34, 34]);
                     
         % Properties of the serial port
         port
@@ -96,19 +88,19 @@ classdef HexapodInterface < handle
         % Move the hexapod to a specified absolute location
         % #TODO# Need some protection layer
         function move(obj, pos)
-            % pos = [x, y, z] in [mm, mm, mm]
+            % pos = [x, y, z, u, v, w] in [mm, mm, mm, deg, deg, deg]
             
             % limit to hardware range
             pos = obj.saturate(pos);
             
             % send command
-            send_command(obj.port, 'MOV! X%.2f Y%.2f Z%.2f\n', pos);
+            send_command(obj.port, 'MOV! X%.3f Y%.3f Z%.3f U%.3f V%.3f W%.3f\n', pos);
         end
         
         
         %% Helper methods
         function new_val = saturate(obj, val)
-            names = {'x', 'y', 'z'};
+            names = {'x', 'y', 'z', 'u', 'v', 'w'};
             N_val = length(val);
             new_val = val;
             
@@ -129,10 +121,10 @@ classdef HexapodInterface < handle
             x = 10*sin(2*pi*time/period)';
             z = 5*cos(2*pi*time/period + pi/6)';
 
-            xyz = [x, x*0, z];
+            xyzuvw = [x, x*0, z, x*0, x*0, x*0];
             
             for ii = 1:N_test
-                obj.move(xyz(ii, :))
+                obj.move(xyzuvw(ii, :))
                 pause(0.1);
             end
             
