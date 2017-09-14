@@ -5,6 +5,9 @@ function main()
 %% Initialisation of all involved parts
 % Some constants
 time_step = 0.06; % [s]
+% Select control mode: 1) xyz: pure translation 2) uvw: pure rotation 3)
+% hybrid, which splits the control according to portion of control used by
+% rotation defined by Hexapodcontroller.r_rotation
 mode = 'uvw';
 
 % Hexapod or offline test?
